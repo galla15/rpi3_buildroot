@@ -1,0 +1,65 @@
+Modifiaction done to standard rpi3_defconfig
+
+###Important --> to modify the files copy the original in 
+		 output/target/ to your overlay folder and
+		 then modify it.
+
+---Misc---
+1. add curl lib 
+
+---To get SSH---
+0.  buildroot add openssh package
+
+1   /etc/network/interface to a static ip 
+    {
+        auto eth0
+        iface eth0 inet satic
+            address <ip>
+            gateway <host ip>
+            netmask <same has host>
+            
+    }
+
+2.  /etc/init.d/S40network  modif to wait 5s before starting ifup. 
+                            This because rpi3 netcard is slow to 
+                            get up and running. Just add "sleep 5" 
+                            in the start procedure. to check reboot
+                            and use "ifconfig -a" dont forget 
+                            "chmod 744" on this file to make exec
+                            
+3.  /etc/ssh/sshd_config --> allow root login. optional allow empty
+                             password
+                             
+---Activate nfs---
+#Target
+1.  Busybox --> mount add NFS support
+2.  Buildroot --> add target packages --> libraries --> networking --> libtirpc
+#Host
+3. Install nfs server --> sudo apt install nfs-kernel-server maybe also nfs-common ?
+4. Perform this commands on the folder you wish to share
+	4.1 sudo chown nobody:nogroup <folder_path>
+	4.2 sudo chmod 777 <folder_path>
+5.Modify server access to clients 
+	5.1 sudo nano /etc/exports
+	5.2 add this line <folder_path> <client_ip/or range>(rw,sync,no_subtree_check)
+		EX : <folder_path> 192.168.1.0/24(rw,sync,no_subtree_check) allow
+		all ip from 0 to 24
+6.export config to host system --> sudo exportfs -a
+7.restart server --> sudo systemctl restart nfs-kernel-server
+8.Firewall open to client --> not done cause local network
+9.More details --> https://vitux.com/install-nfs-server-and-client-on-ubuntu/
+#Target 
+10.Try --> mount -t nfs <host_ip>:<folder_path> <target_mount_path> -o nolock
+	Ex. mount -t nfs 192.168.1.4:/home/mattia/rpi3/shared /usr/workspace -o nolock
+11.Modify fstab --> mkdir -p <mount_point_path>
+		     <host_ip>:<folder_path> <target_mount_path> nfs hard,intr,nolock 0 0
+12.Try it --> mount -a
+
+	
+ 
+
+
+                            
+    
+            
+        
